@@ -1,29 +1,49 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import merge from "deepmerge";
+import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "react-native";
+import {
+  adaptNavigationTheme,
+  MD3DarkTheme,
+  MD3LightTheme,
+  PaperProvider,
+} from "react-native-paper";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Index from "../app/(tabs)/index";
+import { Colors } from "../constants/Colors";
+
+const customDarkTheme = { ...MD3DarkTheme, colors: Colors.dark };
+const customLightTheme = { ...MD3LightTheme, colors: Colors.light };
+
+const { LightTheme, DarkTheme } = adaptNavigationTheme({
+  reactNavigationLight: NavigationDefaultTheme,
+  reactNavigationDark: NavigationDarkTheme,
+});
+
+const CombinedDefaultTheme = merge(LightTheme, customLightTheme);
+const CombinedDarkTheme = merge(DarkTheme, customDarkTheme);
+
+const Stack = createNativeStackNavigator();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const colorScheme = useColorScheme(); // <-- key change here
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+  const paperTheme =
+      colorScheme === "dark" ? CombinedDarkTheme : CombinedDefaultTheme;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+      <PaperProvider theme={paperTheme}>
+        <ThemeProvider value={paperTheme}>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" component={Index} />
+          </Stack.Navigator>
+        </ThemeProvider>
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      </PaperProvider>
   );
 }
